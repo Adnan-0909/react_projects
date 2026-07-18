@@ -7,24 +7,33 @@ function Weather() {
     const [weatherData, setWeatherData] = useState(null)
 
     async function fetchWeatherData(param) {
+        const city = param?.trim()
+        const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY?.trim()
+
+        if (!city || !apiKey) return
+
         setLoading(true)
         try {
             const response = await fetch(
-                `https://pro.openweathermap.org/data/2.5/forecast/hourly?q=${param}&appid=05c51ced5757217bd8cbe1201a9b8faf`
+                `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
+                    city
+                )}&appid=${apiKey}&units=metric`
             )
 
             const data = await response.json()
-            console.log(data, 'data')
-            if (data) {
-                setLoading(false)
-                setWeatherData(data)
+
+            if (!response.ok) {
+                console.log('API error:', data)
+                setWeatherData(null)
+                return
             }
-        }
 
-
-        catch (e) {
-            setLoading(false)
+            setWeatherData(data)
+        } catch (e) {
             console.log(e)
+            setWeatherData(null)
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -32,12 +41,12 @@ function Weather() {
         fetchWeatherData(search)
     }
 
-    function getCurrentDate(){
-        return new Date().toLocaleDateString('en-us',{
+    function getCurrentDate() {
+        return new Date().toLocaleDateString('en-us', {
             weekday: 'long',
-            month:'long',
-            day:'numeric',
-            year:'numeric'
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
         })
     }
 
@@ -45,7 +54,6 @@ function Weather() {
         fetchWeatherData('islamabad')
     }, [])
 
-    console.log(weatherData)
     return (
         <div>
             <Search
@@ -54,31 +62,39 @@ function Weather() {
                 handleSearch={handleSearch}
             />
 
-            {
-                loading ? <div>Loading...</div> :
-                    <div>
-                        <div className='city-name'>
-                            <h2> {weatherData?.name},<span>{weatherData?.sys?.country}</span></h2>
-                        </div>
-                        <div className='date'><span>{getCurrentDate()}</span></div>
-                        <div>{weatherData?.main?.temp}</div>
-                        <p className='description'>{weatherData && weatherData.weather && weatherData.weather[0] ? weatherData.weather[0].description:''}</p>
-                        <div className='weather-info'>
-                            <div>
-                                <div>
-                                    <p className='wind'>
-                                        {weatherData?.wind?.speed}
-                                    </p>
-                                    <p>
-                                        Speed
-                                    </p>
-                                </div>
-                            </div>
+            {loading ? (
+                <div>Loading...</div>
+            ) : (
+                <div>
+                    <div className='city-name'>
+                        <h2>
+                            {weatherData?.name},<span>{weatherData?.sys?.country}</span>
+                        </h2>
+                    </div>
+                    <div className='date'>
+                        <span>{getCurrentDate()}</span>
+                    </div>
+                    <div>{weatherData?.main?.temp}°C</div>
+                    <p className='description'>
+                        {weatherData?.weather?.[0]?.description || ''}
+                    </p>
 
+                    <div className='weather-info'>
+                        <div>
+                            <div>
+                                <p className='wind'>{weatherData?.wind?.speed}</p>
+                                <p>Wind Speed</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div>
+                                <p className='humidity'>{weatherData?.main?.humidity}%</p>
+                                <p>Humidity</p>
+                            </div>
                         </div>
                     </div>
-
-            }
+                </div>
+            )}
         </div>
     )
 }
